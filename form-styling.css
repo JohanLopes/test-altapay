@@ -1,0 +1,10 @@
+.CustomAltaPayCloseButton {
+  display: none !important;
+}
+
+.AltaPaySubmitButton,
+.CustomAltaPaySubmitButton,
+button[type='submit'] {
+  background-color: #0970e6 !important;
+  border-color: #0970e6 !important;
+}
