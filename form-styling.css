@@ -1,1 +1,26 @@
-
+<body>
+	<div class="MyFormContainer">
+		<div class="CustomAltaPayCloseButton">Close</div>
+		<form id="PensioPaymentForm" >
+			All content here will be replaced by the actual payment form
+		</form>
+	</div>
+</body>
+.MyFormContainer
+{
+	width:500px;
+	margin-left:auto;
+	margin-right:auto;
+	margin-top:50px;
+	background-color:white;
+	border:1px solid black;
+	padding:10px;
+	position:relative;
+}
+.CustomAltaPayCloseButton
+{
+	position:absolute;
+	right:0px;
+	top:0px;
+	background-color:red;
+}
