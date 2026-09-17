@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!--
+  AltaPay merchant-hosted payment form styling page.
+
+  Built from every documented hook I could find for AltaPay's "callback_form" / form-styling
+  mechanism (see the "Styling the payment page (callback_form)", "Payment Page Form Setup", and
+  "Styling a floating payment window" pages under documentation.altapay.com/Content/Ecom/).
+
+  IMPORTANT CAVEAT: those docs describe AltaPay's older Ecom API. Your integration uses the newer
+  Checkout API JS SDK (AltaPaySDK.js) via `setFormStylingUrl(...)`, and AltaPay does not publicly
+  confirm this exact HTML/CSS contract applies to that SDK version. Treat this as a documented
+  best-effort starting point, not a guaranteed spec - verify against the sandbox
+  (onl.preprod.mpg.market-pay.com) or with AltaPay support once hosted.
+
+  Sections below are labelled REQUIRED / CONDITIONAL / OPTIONAL / LEGACY-ONLY based on what the
+  docs say. Delete or adapt anything you don't need.
+-->
+<title>AltaPay Payment Form Styling</title>
+<style>
+  :root {
+    --altapay-bg: #ffffff;
+    --altapay-text: #1a1a1a;
+    --altapay-muted: #6b7280;
+    --altapay-border: #d1d5db;
+    --altapay-accent: #0f62fe;
+    --altapay-accent-hover: #0043ce;
+    --altapay-error: #da1e28;
+    --altapay-success: #198038;
+    --altapay-focus-ring: rgba(15, 98, 254, 0.25);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    padding: 24px;
+    background: var(--altapay-bg);
+    color: var(--altapay-text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  /* ---------------------------------------------------------------------
+     REQUIRED: single <form id="PensioPaymentForm">. AltaPay replaces its
+     inner content with the actual card/payment fields, so this element
+     itself must exist but you should not rely on styling its children by
+     tag name - target the classes AltaPay applies (below) instead.
+  --------------------------------------------------------------------- */
+  #PensioPaymentForm {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px;
+    border: 1px solid var(--altapay-border);
+    border-radius: 8px;
+  }
+
+  /* ---------------------------------------------------------------------
+     CONDITIONAL: surcharge / total display, only rendered if AltaPay
+     injects values into these elements for a transaction with a surcharge.
+  --------------------------------------------------------------------- */
+  #PensioSurcharge,
+  #PensioTotal {
+    display: block;
+    font-weight: 600;
+  }
+
+  #PensioSurcharge::before {
+    content: 'Surcharge: ';
+    font-weight: 400;
+    color: var(--altapay-muted);
+  }
+
+  #PensioTotal::before {
+    content: 'Total: ';
+    font-weight: 400;
+    color: var(--altapay-muted);
+  }
+
+  /* ---------------------------------------------------------------------
+     OPTIONAL: let the customer override the payment amount. Requires
+     asking AltaPay support to enable this on your account first.
+  --------------------------------------------------------------------- */
+  #PensioOverrideAmount {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--altapay-border);
+    border-radius: 6px;
+    font-size: 15px;
+  }
+
+  #PensioOverrideAmountError {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--altapay-error);
+  }
+
+  /* ---------------------------------------------------------------------
+     OPTIONAL: fallback notice shown to customers with JavaScript disabled.
+  --------------------------------------------------------------------- */
+  #PensioJavascriptDisabledSurchargeNotice {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    background: #fff8e1;
+    color: #7a5b00;
+    font-size: 13px;
+  }
+
+  /* ---------------------------------------------------------------------
+     REQUIRED (visual): hide AltaPay's default submit button and style your
+     own custom trigger instead.
+  --------------------------------------------------------------------- */
+  .AltaPaySubmitButton {
+    display: none !important;
+  }
+
+  .CustomAltaPaySubmitButton {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 6px;
+    background: var(--altapay-accent);
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+  }
+
+  .CustomAltaPaySubmitButton:hover {
+    background: var(--altapay-accent-hover);
+  }
+
+  .CustomAltaPaySubmitButton:disabled {
+    background: var(--altapay-border);
+    cursor: not-allowed;
+  }
+
+  /* ---------------------------------------------------------------------
+     LEGACY-ONLY: close button for the floating/popup payment window
+     integration. AltaPay attaches its own click handler to this class.
+     Not applicable if you're using the embedded Checkout API JS SDK flow
+     already wired up in this project (it manages its own close/redirect).
+  --------------------------------------------------------------------- */
+  .CustomAltaPayCloseButton {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--altapay-text);
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .CustomAltaPayCloseButton:hover {
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  /* ---------------------------------------------------------------------
+     Validation-state classes AltaPay toggles on <body> as the customer
+     fills in the form.
+  --------------------------------------------------------------------- */
+  body.validPan #PensioPaymentForm,
+  body.validCvc #PensioPaymentForm,
+  body.validExpiry #PensioPaymentForm {
+    border-color: var(--altapay-success);
+  }
+
+  body.partlyEnteredPan #PensioPaymentForm,
+  body.partlyEnteredCvc #PensioPaymentForm,
+  body.partlyEnteredCardholderName #PensioPaymentForm {
+    border-color: var(--altapay-accent);
+  }
+
+  /* validCardholderName, validExpiryMonth, validExpiryYear also get added
+     to <body> individually - add rules for them the same way if you need
+     field-level (rather than form-level) feedback. */
+
+  /* ---------------------------------------------------------------------
+     Focus-state classes AltaPay toggles on <body> while a given field has
+     focus - use them to fake a focus ring on your own wrapper elements
+     since you don't control the injected <input> markup directly.
+  --------------------------------------------------------------------- */
+  body.creditCardNumberInputFocus #PensioPaymentForm,
+  body.cvcInputFocus #PensioPaymentForm,
+  body.emonthFocus #PensioPaymentForm,
+  body.eyearFocus #PensioPaymentForm {
+    box-shadow: 0 0 0 3px var(--altapay-focus-ring);
+  }
+
+  /* ---------------------------------------------------------------------
+     Token-based (saved card) payments.
+  --------------------------------------------------------------------- */
+  body.tokenBasedPan #PensioPaymentForm {
+    background: #f5f7ff;
+  }
+
+  /* ---------------------------------------------------------------------
+     iDeal-specific hooks.
+  --------------------------------------------------------------------- */
+  .ideal-logo {
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  .ideal-text {
+    vertical-align: middle;
+    font-size: 14px;
+    color: var(--altapay-text);
+  }
+
+  /* ---------------------------------------------------------------------
+     Accessibility: required-field indicator, applied to spans or divs.
+  --------------------------------------------------------------------- */
+  .pensio_required_field_indicator {
+    color: var(--altapay-error);
+    margin-left: 2px;
+  }
+</style>
+</head>
+<body>
+
+  <!-- OPTIONAL: shown only to customers with JavaScript disabled. -->
+  <noscript>
+    <div id="PensioJavascriptDisabledSurchargeNotice">
+      JavaScript is disabled in your browser. Some payment details, such as any applicable
+      surcharge, may not display correctly.
+    </div>
+  </noscript>
+
+  <!--
+    REQUIRED: exactly one form with this id. Everything inside the comment
+    is replaced by AltaPay with the actual payment fields (card number,
+    expiry, CVC, etc.) - do not add real form fields of your own here.
+  -->
+  <form id="PensioPaymentForm">
+    <!-- All content in here will be replaced by the actual payment form -->
+
+    <!-- CONDITIONAL: only populated when the transaction has a surcharge. -->
+    <div id="PensioSurcharge"></div>
+    <div id="PensioTotal"></div>
+
+    <!-- OPTIONAL: customer-editable amount override (needs AltaPay support to enable). -->
+    <!--
+    <label for="PensioOverrideAmount">
+      Amount
+      <span class="pensio_required_field_indicator">*</span>
+    </label>
+    <input id="PensioOverrideAmount" name="PensioOverrideAmount" type="text">
+    <span id="PensioOverrideAmountError"></span>
+    -->
+
+    <!-- REQUIRED (visual): your own submit trigger; AltaPay's default one is hidden via CSS. -->
+    <button type="submit" class="CustomAltaPaySubmitButton">
+      Pay now
+    </button>
+  </form>
+
+  <!-- LEGACY-ONLY: close control for the floating/popup window integration.
+       Remove this if you're using the embedded Checkout API JS SDK flow. -->
+  <!--
+  <div class="CustomAltaPayCloseButton">&times;</div>
+  -->
+
+  <!-- LEGACY-ONLY: required script for AltaPay's floating payment window
+       integration (Ecom API). It needs a merchant/terminal-specific "pid"
+       value from your AltaPay account - do not uncomment with a placeholder,
+       fill in your own value first, and only if this integration path
+       applies to you.
+  <script
+    type="text/javascript"
+    src="https://gateway.altapaysecure.com/eCommerce/API/embeddedPaymentWindow?pid=YOUR_PID_HERE">
+  </script>
+  -->
+
+</body>
+</html>
