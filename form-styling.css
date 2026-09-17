@@ -1,28 +1,13 @@
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <style type="text/css">
-            .PensioCloseButton {
-              display: none !important;
-            }
-            
-            .AltaPaySubmitButton {
-              background-color: #0970e6 !important;
-              border-color: #0970e6 !important;
-            }
-            
-            .Content {
-              border: 0 !important;
-              padding: 0 !important;
-            }
-        </style>
-    </head>
-    <body>
-      Test
-        <form id="PensioPaymentForm" >
-        	<!--All content in here will be replaced by the actual payment form-->
-        </form>
-    </body>
-</html>
+.PensioCloseButton {
+  display: none !important;
+}
 
+.AltaPaySubmitButton {
+  background-color: #0970e6 !important;
+  border-color: #0970e6 !important;
+}
 
+.Content {
+  border: 0 !important;
+  padding: 0 !important;
+}
